@@ -1,35 +1,310 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NOVA Calc | PWA Hesap Makinesi</title>
-  <link rel="manifest" href="manifest.json">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NOVA Calc | Fütüristik Hesap Makinesi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <meta name="theme-color" content="#0a0f1f">
+  <style>
+    :root{
+      --bg:#0a0f1f;
+      --panel:#0d1326;
+      --glass:rgba(255,255,255,.06);
+      --border:rgba(0,245,255,.25);
+      --text:#e6f7ff;
+      --muted:#98a9b3;
+      --primary:#00f5ff;
+      --accent:#ff00c8;
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --error:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:radial-gradient(1200px 500px at 10% -20%, rgba(255,0,200,.08), transparent),
+      radial-gradient(1200px 500px at 90% -20%, rgba(0,245,255,.08), transparent), var(--bg);
+      color:var(--text); font-family:Inter,system-ui,sans-serif;
+    }
+    .wrap{
+      min-height:100vh; display:grid; place-items:center; padding:18px;
+    }
+    .calc{
+      width:min(420px,92vw);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius:24px; overflow:hidden;
+      box-shadow:0 0 40px rgba(0,245,255,.15), inset 0 0 60px rgba(255,0,200,.06);
+      backdrop-filter:blur(16px);
+    }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 16px; background:var(--panel); border-bottom:1px solid var(--border);
+    }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .logo{ width:22px; height:22px; border-radius:6px;
+      background:conic-gradient(from 0deg, var(--primary), var(--accent), var(--primary));
+      box-shadow:0 0 14px var(--primary);
+    }
+    .brand span{ font-family:Orbitron, sans-serif; font-weight:700; letter-spacing:.5px }
+    .tools{ display:flex; gap:8px }
+    .chip{
+      border:1px solid var(--border); color:var(--text);
+      background:var(--glass); border-radius:999px; padding:6px 10px; font-size:12px; cursor:pointer;
+    }
+    .screen{
+      padding:16px; display:grid; gap:8px; background:linear-gradient(180deg, transparent, rgba(0,245,255,.04));
+    }
+    .expr{
+      min-height:24px; color:var(--muted); font-size:14px; letter-spacing:.3px; word-wrap:break-word;
+    }
+    .output{
+      font-family:Orbitron, sans-serif; font-size:32px; text-align:right;
+      text-shadow:0 0 12px rgba(0,245,255,.45); min-height:40px;
+    }
+    .grid{
+      display:grid; gap:10px; padding:16px; background:var(--panel);
+      grid-template-columns: repeat(4, 1fr);
+    }
+    button{
+      appearance:none; border:1px solid var(--border); color:var(--text);
+      background:linear-gradient(180deg, rgba(0,245,255,.08), rgba(255,0,200,.06));
+      border-radius:14px; padding:14px 10px; font-size:16px; font-weight:700; cursor:pointer;
+      box-shadow:0 0 12px rgba(0,245,255,.15); transition:transform .08s ease, box-shadow .2s ease, background .2s ease;
+      touch-action:manipulation;
+    }
+    button:active{ transform:scale(.98) }
+    .op{ color:#b7f9ff }
+    .eq{
+      background:linear-gradient(90deg, var(--primary), var(--accent));
+      border:0; color:#021018; box-shadow:0 0 18px rgba(255,0,200,.35);
+    }
+    .wide{ grid-column: span 2; }
+    .ghost{ background:var(--glass); color:var(--muted) }
+    .row{ grid-column:1 / -1; display:grid; grid-template-columns: repeat(4, 1fr); gap:10px }
+    .sec{
+      display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:10px;
+    }
+    .status{
+      padding:8px 16px; font-size:12px; color:var(--muted); border-top:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(0,245,255,.04), transparent);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .dot{ width:8px; height:8px; border-radius:999px; background:var(--good); box-shadow:0 0 8px var(--good) }
+    .history{
+      max-height:160px; overflow:auto; padding:8px 16px; border-top:1px solid var(--border);
+      background:linear-gradient(180deg, transparent, rgba(255,0,200,.04));
+    }
+    .history-item{
+      font-size:13px; color:var(--muted); display:flex; justify-content:space-between; gap:12px; padding:6px 0;
+      border-bottom:1px dashed rgba(0,245,255,.15);
+    }
+    .history-item .val{ color:var(--text); font-family:Orbitron, sans-serif }
+    @media (max-width:420px){
+      .output{ font-size:28px }
+      button{ padding:12px 8px; font-size:15px }
+    }
+  </style>
 </head>
 <body>
-  <h1>Fütüristik Hesap Makinesi</h1>
-  <input id="screen" readonly>
-  <div>
-    <button onclick="press('1')">1</button>
-    <button onclick="press('2')">2</button>
-    <button onclick="press('+')">+</button>
-    <button onclick="calc()">=</button>
-  </div>
+  <main class="wrap">
+    <section class="calc" role="application" aria-label="NOVA futuristik hesap makinesi">
+      <div class="topbar">
+        <div class="brand"><div class="logo" aria-hidden="true"></div><span>NOVA CALC</span></div>
+        <div class="tools">
+          <button class="chip" id="themeToggle" aria-label="Tema değiştir">Neon/Dark</button>
+          <button class="chip" id="clearHistory" aria-label="Geçmişi temizle">Geçmiş</button>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="expr" id="expr" aria-live="polite"></div>
+        <div class="output" id="output">0</div>
+      </div>
+
+      <div class="grid" id="keys">
+        <!-- Bilimsel kısa yol -->
+        <button class="ghost" data-fn="pi">π</button>
+        <button class="ghost" data-fn="e">e</button>
+        <button class="ghost" data-fn="ans">ANS</button>
+        <button class="ghost" data-fn="percent">%</button>
+
+        <button class="op" data-op="(">(</button>
+        <button class="op" data-op=")">)</button>
+        <button class="op" data-fn="sqrt">√</button>
+        <button class="op" data-fn="pow">xʸ</button>
+
+        <button data-num="7">7</button>
+        <button data-num="8">8</button>
+        <button data-num="9">9</button>
+        <button class="op" data-op="/">÷</button>
+
+        <button data-num="4">4</button>
+        <button data-num="5">5</button>
+        <button data-num="6">6</button>
+        <button class="op" data-op="*">×</button>
+
+        <button data-num="1">1</button>
+        <button data-num="2">2</button>
+        <button data-num="3">3</button>
+        <button class="op" data-op="-">−</button>
+
+        <button class="wide" data-num="0">0</button>
+        <button data-op=".">.</button>
+        <button class="op" data-op="+">+</button>
+
+        <button class="ghost" id="clear">C</button>
+        <button class="ghost" id="backspace">⌫</button>
+        <button class="ghost" id="sign">±</button>
+        <button class="eq" id="equals">=</button>
+      </div>
+
+      <div class="history" id="history" aria-label="Hesap geçmişi"></div>
+
+      <div class="status">
+        <span style="display:flex; align-items:center; gap:8px"><span class="dot"></span> Sistem hazır</span>
+        <span id="statusMsg">Tuş takımı ve klavye destekli</span>
+      </div>
+    </section>
+  </main>
 
   <script>
-    let expr = "";
-    function press(v){ expr += v; document.getElementById('screen').value = expr; }
-    function calc(){
-      try{ expr = eval(expr).toString(); }
-      catch{ expr = "Hata"; }
-      document.getElementById('screen').value = expr;
+    // State
+    const exprEl = document.getElementById('expr');
+    const outEl = document.getElementById('output');
+    const histEl = document.getElementById('history');
+    let expr = '';
+    let ans = 0;
+    let neon = true;
+
+    // Helpers
+    const clamp = (n) => Math.abs(n) < 1e-12 ? 0 : n;
+    const fmt = (n) => {
+      if (!isFinite(n)) return 'Hata';
+      const s = Math.abs(n) >= 1e9 || (Math.abs(n) < 1e-6 && n !== 0);
+      return s ? n.toExponential(6).replace(/(\.?\d*?)0+e/,'$1e') : Number(n.toFixed(10)).toString();
+    };
+    const pushHistory = (e, v) => {
+      const row = document.createElement('div');
+      row.className = 'history-item';
+      const l = document.createElement('span'); l.textContent = e;
+      const r = document.createElement('span'); r.className = 'val'; r.textContent = v;
+      row.append(l, r); histEl.prepend(row);
+    };
+
+    // Parsing: safe evaluator
+    function evaluateExpression(raw){
+      if (!raw) return 0;
+      // Replace friendly ops
+      let s = raw.replace(/÷/g,'/').replace(/×/g,'*');
+      // Functions and constants
+      s = s.replace(/π/g, String(Math.PI))
+           .replace(/\be\b/g, String(Math.E))
+           .replace(/\bANS\b/g, String(ans));
+      // Power: a^b -> Math.pow(a,b)
+      s = s.replace(/([\d\.]+|\))\^([\-]?\d+(\.\d+)?|\()/g, (m, a, b) => `Math.pow(${a},${b})`);
+      // sqrt symbol
+      s = s.replace(/√\s*\(/g, 'Math.sqrt(')
+      // percent: 12% -> 0.12, 50+10% -> 50+(50*0.10)
+           .replace(/(\d+(\.\d+)?)%/g, (_,n)=>`(${n}/100)`);
+      // Safe characters only
+      if (!/^[\d\.\+\-\*\/\^\(\)\sA-Za-z,]*$/.test(s)) throw new Error('Geçersiz ifade');
+      // Map basic functions
+      s = s.replace(/\b(sin|cos|tan)\(/g, (m)=>`Math.${m}`);
+      // Evaluate
+      // eslint-disable-next-line no-new-func
+      const val = Function(`"use strict"; return (${s})`)();
+      return clamp(val);
     }
 
-    // Service worker kaydı
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
+    function render(){
+      exprEl.textContent = expr;
+      outEl.textContent = expr ? '' : '0';
     }
+
+    // Button interactions
+    document.getElementById('keys').addEventListener('click', (e)=>{
+      const b = e.target.closest('button'); if(!b) return;
+      const num = b.dataset.num;
+      const op = b.dataset.op;
+      const fn = b.dataset.fn;
+      if (num) { expr += num; render(); return; }
+      if (op) { expr += op; render(); return; }
+      if (fn === 'pi') { expr += 'π'; render(); return; }
+      if (fn === 'e') { expr += 'e'; render(); return; }
+      if (fn === 'ans') { expr += 'ANS'; render(); return; }
+      if (fn === 'percent') { expr += '%'; render(); return; }
+      if (fn === 'sqrt') { expr += '√('; render(); return; }
+      if (fn === 'pow') { expr += '^'; render(); return; }
+    });
+
+    // Core controls
+    document.getElementById('equals').addEventListener('click', ()=>{
+      try{
+        const val = evaluateExpression(expr);
+        const out = fmt(val);
+        outEl.textContent = out;
+        pushHistory(expr, out);
+        ans = val;
+        expr = '';
+      }catch(err){
+        outEl.textContent = 'Hata';
+        document.getElementById('statusMsg').textContent = 'İfadeyi kontrol edin';
+        setTimeout(()=>document.getElementById('statusMsg').textContent='Tuş takımı ve klavye destekli', 1500);
+      }
+    });
+    document.getElementById('clear').addEventListener('click', ()=>{ expr=''; render(); });
+    document.getElementById('backspace').addEventListener('click', ()=>{
+      expr = expr.slice(0, -1); render();
+    });
+    document.getElementById('sign').addEventListener('click', ()=>{
+      // If last number exists, toggle sign by wrapping with ( -1 * x )
+      const m = expr.match(/(\d+(\.\d+)?)(?!.*\d)/);
+      if (m){
+        const start = expr.lastIndexOf(m[0]);
+        expr = expr.slice(0, start) + `(-1*${m[0]})` + expr.slice(start + m[0].length);
+      } else {
+        expr = `(-1*${expr || 0})`;
+      }
+      render();
+    });
+
+    // History actions
+    document.getElementById('clearHistory').addEventListener('click', ()=>{
+      histEl.innerHTML = '';
+    });
+
+    // Theme toggle (neon/dark intensity)
+    document.getElementById('themeToggle').addEventListener('click', ()=>{
+      neon = !neon;
+      document.documentElement.style.setProperty('--primary', neon ? '#00f5ff' : '#8bdcff');
+      document.documentElement.style.setProperty('--accent', neon ? '#ff00c8' : '#9b59b6');
+      document.documentElement.style.setProperty('--border', neon ? 'rgba(0,245,255,.25)' : 'rgba(139,220,255,.18)');
+    });
+
+    // Keyboard support
+    const keyMap = {
+      '/':'/', '*':'*', '+':'+', '-':'-', '.':'.',
+      '(':'(', ')':')'
+    };
+    window.addEventListener('keydown', (e)=>{
+      const k = e.key;
+      if(/\d/.test(k)){ expr += k; render(); return; }
+      if(keyMap[k]){ expr += keyMap[k]; render(); return; }
+      if(k === 'Enter' || k === '='){ e.preventDefault(); document.getElementById('equals').click(); }
+      if(k === 'Backspace'){ e.preventDefault(); document.getElementById('backspace').click(); }
+      if(k.toLowerCase() === 'p'){ expr += 'π'; render(); }
+      if(k.toLowerCase() === 'e'){ expr += 'e'; render(); }
+      if(k === '^'){ expr += '^'; render(); }
+      if(k === '%'){ expr += '%'; render(); }
+    });
+
+    // Tap feedback
+    document.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('touchstart', ()=>b.style.boxShadow='0 0 24px rgba(255,0,200,.45)');
+      b.addEventListener('touchend', ()=>b.style.boxShadow='0 0 12px rgba(0,245,255,.15)');
+    });
   </script>
 </body>
 </html>
